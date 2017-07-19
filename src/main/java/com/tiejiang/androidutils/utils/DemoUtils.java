@@ -3,10 +3,8 @@ package com.tiejiang.androidutils.utils;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -16,17 +14,11 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Vibrator;
-import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
-
-import com.yinyutech.xiaolerobot.common.CCPAppManager;
-import com.yuntongxun.ecsdk.ECDeviceType;
-import com.yuntongxun.ecsdk.ECNetworkType;
 
 import junit.framework.Assert;
 
@@ -44,6 +36,7 @@ import java.util.regex.Pattern;
 
 /**
  * Created by Jorstin on 2015/3/18.
+ * modified by zhao on 20170716
  */
 public class DemoUtils {
 	public static final String TAG = "ECDemo.DemoUtils";
@@ -327,164 +320,6 @@ public class DemoUtils {
 	}
 
 	/**
-	 * @param context
-	 * @param intent
-	 * @param appPath
-	 * @return
-	 */
-	public static String resolvePhotoFromIntent(Context context, Intent intent,
-			String appPath) {
-		if (context == null || intent == null || appPath == null) {
-//			LogUtil.e(LogUtil.getLogUtilsTag(DemoUtils.class),
-//					"resolvePhotoFromIntent fail, invalid argument");
-			return null;
-		}
-		Uri uri = Uri.parse(intent.toURI());
-		Cursor cursor = context.getContentResolver().query(uri, null, null,
-				null, null);
-		try {
-
-			String pathFromUri = null;
-			if (cursor != null && cursor.getCount() > 0) {
-				cursor.moveToFirst();
-				int columnIndex = cursor
-						.getColumnIndex(MediaStore.MediaColumns.DATA);
-				// if it is a picasa image on newer devices with OS 3.0 and up
-				if (uri.toString().startsWith(
-						"content://com.google.android.gallery3d")) {
-					// Do this in a background thread, since we are fetching a
-					// large image from the web
-					pathFromUri = saveBitmapToLocal(appPath,
-							createChattingImageByUri(intent.getData()));
-				} else {
-					// it is a regular local image file
-					pathFromUri = cursor.getString(columnIndex);
-				}
-				cursor.close();
-//				LogUtil.d(TAG, "photo from resolver, path: " + pathFromUri);
-				return pathFromUri;
-			} else {
-
-				if (intent.getData() != null) {
-					pathFromUri = intent.getData().getPath();
-					if (new File(pathFromUri).exists()) {
-//						LogUtil.d(TAG, "photo from resolver, path: "
-//								+ pathFromUri);
-						return pathFromUri;
-					}
-				}
-
-				// some devices (OS versions return an URI of com.android
-				// instead of com.google.android
-				if ((intent.getAction() != null)
-						&& (!(intent.getAction().equals("inline-data")))) {
-					// use the com.google provider, not the com.android
-					// provider.
-					// Uri.parse(intent.getData().toString().replace("com.android.gallery3d","com.google.android.gallery3d"));
-					pathFromUri = saveBitmapToLocal(appPath, (Bitmap) intent
-							.getExtras().get("data"));
-//					LogUtil.d(TAG, "photo from resolver, path: " + pathFromUri);
-					return pathFromUri;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if (cursor != null) {
-				cursor.close();
-			}
-		}
-
-//		LogUtil.e(TAG, "resolve photo from intent failed ");
-		return null;
-	}
-
-	/**
-	 *
-	 * @param uri
-	 * @return
-	 */
-	public static Bitmap createChattingImageByUri(Uri uri) {
-		return createChattingImage(0, null, null, uri, 0.0F, 400, 800);
-	}
-
-	/**
-	 *
-	 * @param resource
-	 * @param path
-	 * @param b
-	 * @param uri
-	 * @param dip
-	 * @param width
-	 * @param height
-	 * @return
-	 */
-	public static Bitmap createChattingImage(int resource, String path,
-			byte[] b, Uri uri, float dip, int width, int height) {
-		if (width <= 0 || height <= 0) {
-			return null;
-		}
-
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		int outWidth = 0;
-		int outHeight = 0;
-		int sampleSize = 0;
-		try {
-
-			do {
-				if (dip != 0.0F) {
-					options.inDensity = (int) (160.0F * dip);
-				}
-				options.inJustDecodeBounds = true;
-				decodeMuilt(options, b, path, uri, resource);
-				//
-				outWidth = options.outWidth;
-				outHeight = options.outHeight;
-
-				options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-				if (outWidth <= width || outHeight <= height) {
-					sampleSize = 0;
-					setInNativeAlloc(options);
-					Bitmap decodeMuiltBitmap = decodeMuilt(options, b, path,
-							uri, resource);
-					return decodeMuiltBitmap;
-				} else {
-					options.inSampleSize = (int) Math.max(outWidth / width,
-							outHeight / height);
-					sampleSize = options.inSampleSize;
-				}
-			} while (sampleSize != 0);
-
-		} catch (IncompatibleClassChangeError e) {
-			e.printStackTrace();
-			throw ((IncompatibleClassChangeError) new IncompatibleClassChangeError(
-					"May cause dvmFindCatchBlock crash!").initCause(e));
-		} catch (Throwable throwable) {
-			throwable.printStackTrace();
-			BitmapFactory.Options catchOptions = new BitmapFactory.Options();
-			if (dip != 0.0F) {
-				catchOptions.inDensity = (int) (160.0F * dip);
-			}
-			catchOptions.inPreferredConfig = Bitmap.Config.RGB_565;
-			if (sampleSize != 0) {
-				catchOptions.inSampleSize = sampleSize;
-			}
-			setInNativeAlloc(catchOptions);
-			try {
-				return decodeMuilt(options, b, path, uri, resource);
-			} catch (IncompatibleClassChangeError twoE) {
-				twoE.printStackTrace();
-				throw ((IncompatibleClassChangeError) new IncompatibleClassChangeError(
-						"May cause dvmFindCatchBlock crash!").initCause(twoE));
-			} catch (Throwable twoThrowable) {
-				twoThrowable.printStackTrace();
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * save image from uri
 	 * 
 	 * @param outPath
@@ -526,49 +361,6 @@ public class DemoUtils {
 //			LogUtil.d(TAG,
 //					"photo image from data, path:" + file.getAbsolutePath());
 			return file.getAbsolutePath();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	/**
-	 *
-	 * @param options
-	 * @param data
-	 * @param path
-	 * @param uri
-	 * @param resource
-	 * @return
-	 */
-	public static Bitmap decodeMuilt(BitmapFactory.Options options,
-			byte[] data, String path, Uri uri, int resource) {
-		try {
-
-			if (!checkByteArray(data) && TextUtils.isEmpty(path) && uri == null
-					&& resource <= 0) {
-				return null;
-			}
-
-			if (checkByteArray(data)) {
-				return BitmapFactory.decodeByteArray(data, 0, data.length,
-						options);
-			}
-
-			if (uri != null) {
-				InputStream inputStream = CCPAppManager.getContext()
-						.getContentResolver().openInputStream(uri);
-				Bitmap localBitmap = BitmapFactory.decodeStream(inputStream,
-						null, options);
-				inputStream.close();
-				return localBitmap;
-			}
-
-			if (resource > 0) {
-				return BitmapFactory.decodeResource(CCPAppManager.getContext()
-						.getResources(), resource, options);
-			}
-			return BitmapFactory.decodeFile(path, options);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1132,10 +924,6 @@ public class DemoUtils {
 //		return new PhotoBitmapDrawable(src, mask, paint);
 //	}
 
-	public static boolean checkUpdater(String serVer) {
-		String version = CCPAppManager.getVersion();
-		return compareVersion(version, serVer) == -1;
-	}
 
 	public static int compareVersion(String curVer, String serVer) {
 		if (curVer.equals(serVer) || serVer == null) {
@@ -1313,56 +1101,4 @@ public class DemoUtils {
 		}
 		vibrator.cancel();
 	}
-
-    public static String getDeviceWithType (ECDeviceType deviceType){
-        if(deviceType == null) {
-            return "未知";
-        }
-        switch (deviceType) {
-            case ANDROID_PHONE:
-                return "Android手机";
-
-            case IPHONE:
-                return "iPhone手机";
-
-            case IPAD:
-                return "iPad平板";
-
-            case ANDROID_PAD:
-                return "Android平板";
-
-            case PC:
-                return "PC";
-
-            case WEB:
-                return "Web";
-
-            default:
-                return "未知";
-        }
-    }
-
-    public static String getNetWorkWithType(ECNetworkType type){
-        if(type == null) {
-            return "未知";
-        }
-        switch (type) {
-            case ECNetworkType_WIFI:
-                return "wifi";
-
-            case ECNetworkType_4G:
-                return "4G";
-
-            case ECNetworkType_3G:
-                return "3G";
-
-            case ECNetworkType_GPRS:
-                return "GRPS";
-
-            case ECNetworkType_LAN:
-                return "Internet";
-            default:
-                return "其他";
-        }
-    }
 }
