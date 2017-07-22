@@ -760,22 +760,6 @@ public class DemoUtils {
 		return 0;
 	}
 
-	/**
-	 * debug util
-	 * @param tag
-	 * @param str
-	 * */
-	public static class LogUtil{
-		public void e(String tag, String str){
-			Log.e(tag, str);
-		}
-		public void d(String tag, String str){
-			Log.d(tag, str);
-		}
-		public void v(String tag, String str){
-			Log.v(tag, str);
-		}
-	}
 
 	/**
 	 * 旋转图片
