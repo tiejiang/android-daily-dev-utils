@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  * modified by zhao on 20170716
  */
 public class DemoUtils {
-	public static final String TAG = "ECDemo.DemoUtils";
+	public static final String TAG = "utils.DemoUtils";
 	private static final int MAX_DECODE_PICTURE_SIZE = 1920 * 1440;
 	public static boolean inNativeAllocAccessError = false;
 	/** 当前SDK版本号 */
@@ -761,6 +761,23 @@ public class DemoUtils {
 	}
 
 	/**
+	 * debug util
+	 * @param tag
+	 * @param str
+	 * */
+	public static class LogUtil{
+		public void e(String tag, String str){
+			Log.e(tag, str);
+		}
+		public void d(String tag, String str){
+			Log.d(tag, str);
+		}
+		public void v(String tag, String str){
+			Log.v(tag, str);
+		}
+	}
+
+	/**
 	 * 旋转图片
 	 * 
 	 * @param srcPath
@@ -774,7 +791,7 @@ public class DemoUtils {
 			Bitmap.CompressFormat format, String root, String fileName) {
 		Bitmap decodeFile = BitmapFactory.decodeFile(srcPath);
 		if (decodeFile == null) {
-//			LogUtil.e(TAG, "rotate: create bitmap fialed");
+			LogUtil.e(TAG, "rotate: create bitmap fialed");
 			return false;
 		}
 		int width = decodeFile.getWidth();
